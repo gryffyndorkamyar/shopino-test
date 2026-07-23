@@ -1,0 +1,4 @@
+$kind: collection
+name: Shopino API
+variables:
+  base_url: ""
