@@ -147,9 +147,9 @@ func createProductHandler(db *sql.DB, jwtSecret string) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusCreated, map[string]any{
-			"product":     p,
-			"created_by":  userID,
-			"understood":  "token issued by Django, verified by Go",
+			"product":    p,
+			"created_by": userID,
+			"understood": "token issued by Django, verified by Go",
 		})
 	}
 }

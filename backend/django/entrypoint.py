@@ -30,7 +30,17 @@ def wait_for_postgres() -> None:
 def main() -> None:
     wait_for_postgres()
     subprocess.check_call([sys.executable, "manage.py", "migrate", "--noinput"])
-    os.execvp(sys.executable, [sys.executable, "manage.py", "runserver", "0.0.0.0:8000"])
+    os.execvp(
+    "gunicorn",
+    [
+        "gunicorn",
+        "shopino.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+        "--workers",
+        "2",
+    ],
+)
 
 
 if __name__ == "__main__":
