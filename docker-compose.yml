@@ -7,7 +7,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "55432:5432"
+      # 55432 was taken by another local container (postgres-k2)
+      - "55433:5432"
     volumes:
       - shopino_pgdata:/var/lib/postgresql/data
     healthcheck:
