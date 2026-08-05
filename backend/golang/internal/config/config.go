@@ -2,24 +2,28 @@ package config
 
 import "os"
 
-type Config struct{
-     Port string
-	 JWTSecret string
-	 DBHost string
-	 DBPort string
-	 DBUser string
-	 DBPassword string
-	 DBName string
+// Config ≈ بخش تنظیمات settings.py
+type Config struct {
+	Port       string
+	JWTSecret  string
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
 }
 
-func loadConfig() Config {
-     port := env("GO_PORT", "8080")
-	 jwtSecret := env("JWT_SECRET", env("SECRET_KEY", "shopino-dev-secret-change-me"))
-	 dbHost := env("POSTGRES_HOST", "127.0.0.1")
-	 dbPort := env("POSTGRES_PORT", "55432")
-	 dbUser := env("POSTGRES_USER", "shopino")
-	 dbPassword := env("POSTGRES_PASSWORD", "shopino123")
-	 dbName := env("POSTGRES_DB", "shopino_db")
+// Load تنظیمات را از env می‌خواند
+func Load() Config {
+	return Config{
+		Port:       env("GO_PORT", "8080"),
+		JWTSecret:  env("JWT_SECRET", env("SECRET_KEY", "shopino-dev-secret-change-me")),
+		DBHost:     env("POSTGRES_HOST", "127.0.0.1"),
+		DBPort:     env("POSTGRES_PORT", "55432"),
+		DBUser:     env("POSTGRES_USER", "shopino"),
+		DBPassword: env("POSTGRES_PASSWORD", "shopino123"),
+		DBName:     env("POSTGRES_DB", "shopino_db"),
+	}
 }
 
 func env(key, fallback string) string {

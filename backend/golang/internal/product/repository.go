@@ -50,6 +50,33 @@ func (r *Repository) List() ([]Product, error) {
 	return products, nil
 }
 
+// GetByID ≈ Product.objects.get(id=...)
+func (r *Repository) GetByID(id int64) (Product, error) {
+	var p Product
+	err := r.db.QueryRow(`
+		SELECT
+			id, name, description, price, original_price, discount_percent,
+			image_url, stock, is_active, store_id, category_id, created_at, updated_at
+		FROM products
+		WHERE id = $1
+	`, id).Scan(
+		&p.ID,
+		&p.Name,
+		&p.Description,
+		&p.Price,
+		&p.OriginalPrice,
+		&p.DiscountPercent,
+		&p.ImageURL,
+		&p.Stock,
+		&p.IsActive,
+		&p.StoreID,
+		&p.CategoryID,
+		&p.CreatedAt,
+		&p.UpdatedAt,
+	)
+	return p, err
+}
+
 // Create ≈ Product.objects.create(...)
 func (r *Repository) Create(req CreateProductRequest) (Product, error) {
 	var p Product
