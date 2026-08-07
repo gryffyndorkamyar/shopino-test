@@ -1,6 +1,9 @@
 package product
 
-import "database/sql"
+import (
+	"database/sql"
+	"strings"
+)
 
 // Repository ≈ لایه QuerySet / کار مستقیم با SQL
 type Repository struct {
@@ -114,4 +117,27 @@ func (r *Repository) Create(req CreateProductRequest) (Product, error) {
 		&p.UpdatedAt,
 	)
 	return p, err
+}
+
+// Search ≈ Product.objects.filter(name__icontains=q) | filter(description__icontains=q)
+func (r *Repository) Search(query string) ([]Product, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []Product{}, nil
+	}
+
+	rows, err := r.db.Query(`
+		SELECT
+			id, name, description, price, original_price, discount_percent,
+			image_url, stock, is_active, store_id, category_id, created_at, updated_at
+		FROM products
+		WHERE name ILIKE $1 OR description ILIKE $1
+		ORDER BY id DESC
+	`, "%"+query+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// ادامه این تابع را خودت می‌نویسی (حلقه خواندن ردیف‌ها)
 }
