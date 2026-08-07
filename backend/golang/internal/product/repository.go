@@ -139,5 +139,27 @@ func (r *Repository) Search(query string) ([]Product, error) {
 	}
 	defer rows.Close()
 
-	// ادامه این تابع را خودت می‌نویسی (حلقه خواندن ردیف‌ها)
+	products := []Product{}
+	for rows.Next() {
+		var p Product
+		if err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.Description,
+			&p.Price,
+			&p.OriginalPrice,
+			&p.DiscountPercent,
+			&p.ImageURL,
+			&p.Stock,
+			&p.IsActive,
+			&p.StoreID,
+			&p.CategoryID,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, p)
+	}
+	return products, nil
 }
