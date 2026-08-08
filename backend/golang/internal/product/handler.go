@@ -50,6 +50,20 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, products)
 }
 
+
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+    q := r.URL.Query().Get("q")
+
+	products, err := h.repo.Search(q)
+	if err != nil {
+        httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{"detail": err.Error()})
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, products)
+	}
+
+
+
 func (h *Handler) Detail(w http.ResponseWriter, r *http.Request, id int64) {
 	p, err := h.repo.GetByID(id)
 	if errors.Is(err, sql.ErrNoRows) {
