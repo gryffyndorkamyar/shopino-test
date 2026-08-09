@@ -62,6 +62,21 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, products)
 }
 
+func (h *Handler) Ask(w http.ResponseWriter, r *http.Request) {
+     var body AskRequest
+	 if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+        httpx.WriteJSON(w, http.StatusBadRequest, map[string]string{"detail": "invalid json"})
+		return
+	 }
+	 question := strings.TrimSpace(body.Question)
+	 if question == "" {
+		httpx.WriteJSON(w, http.StatusInertnalServerError, map[string]string{"detail": "question is required"})
+		return
+	 }
+
+	 
+}
+
 func (h *Handler) Detail(w http.ResponseWriter, r *http.Request, id int64) {
 	p, err := h.repo.GetByID(id)
 	if errors.Is(err, sql.ErrNoRows) {
