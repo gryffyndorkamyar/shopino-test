@@ -18,3 +18,13 @@ type CreateCategoryRequest struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
+
+type AskRequest struct {
+	Question string `json:"question"`
+}
+
+type AskResponse struct {
+	Question string `json:"question"`
+	Products []Product `json:"products"`
+	Note string `json:"note"`
+}
