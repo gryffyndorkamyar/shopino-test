@@ -52,17 +52,15 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
-    q := r.URL.Query().Get("q")
+	q := r.URL.Query().Get("q")
 
 	products, err := h.repo.Search(q)
 	if err != nil {
-        httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{"detail": err.Error()})
+		httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{"detail": err.Error()})
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, products)
-	}
-
-
+}
 
 func (h *Handler) Detail(w http.ResponseWriter, r *http.Request, id int64) {
 	p, err := h.repo.GetByID(id)
@@ -110,6 +108,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // ProductsRouter ≈ path('products/', ...) در urls.py
 func (h *Handler) ProductsRouter(w http.ResponseWriter, r *http.Request) {
 	rest := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/products/"), "/")
+
+	// GET /api/products/search/?q=...
+	if rest == "search" {
+		if r.Method != http.MethodGet {
+			httpx.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"detail": "method not allowed"})
+			return
+		}
+		h.Search(w, r)
+		return
+	}
 
 	if rest == "" {
 		switch r.Method {
