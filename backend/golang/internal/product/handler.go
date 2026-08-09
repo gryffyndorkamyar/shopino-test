@@ -69,10 +69,10 @@ func (h *Handler) Ask(w http.ResponseWriter, r *http.Request) {
 		return
 	 }
 	 question := strings.TrimSpace(body.Question)
-	 if question == "" {
-		httpx.WriteJSON(w, http.StatusInertnalServerError, map[string]string{"detail": "question is required"})
+	if question == "" {
+		httpx.WriteJSON(w, http.StatusBadRequest, map[string]string{"detail": "question is required"})
 		return
-	 }
+	}
 	 products, err := h.repo.Search(question)
 	 if err != nil {
 		httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{"detail": err.Error()})
@@ -142,14 +142,14 @@ func (h *Handler) ProductsRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /api/products/ask/
 	if rest == "ask" {
-       if r.Method != http.MethodPost {
-          httpx.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"detail": "method not allowed"})
-		  return
-	   }
-	   h.Ask(w, r)
-	   return
-	   }
+		if r.Method != http.MethodPost {
+			httpx.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"detail": "method not allowed"})
+			return
+		}
+		h.Ask(w, r)
+		return
 	}
 
 	if rest == "" {
