@@ -142,6 +142,16 @@ func (h *Handler) ProductsRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rest == "ask" {
+       if r.Method != http.MethodPost {
+          httpx.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"detail": "method not allowed"})
+		  return
+	   }
+	   h.Ask(w, r)
+	   return
+	   }
+	}
+
 	if rest == "" {
 		switch r.Method {
 		case http.MethodGet:
