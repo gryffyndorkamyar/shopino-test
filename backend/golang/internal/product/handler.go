@@ -73,8 +73,16 @@ func (h *Handler) Ask(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteJSON(w, http.StatusInertnalServerError, map[string]string{"detail": "question is required"})
 		return
 	 }
-
-	 
+	 products, err := h.repo.Search(question)
+	 if err != nil {
+		httpx.WriteJSON(w, http.StatusInternalServerError, map[string]string{"detail": err.Error()})
+		return
+	 }
+	 httpx.WriteJSON(w, http.StatusOK, AskResponse{
+		Question: question,
+		Products: products,
+		Note: "retrieval done, llm next", 
+	 })
 }
 
 func (h *Handler) Detail(w http.ResponseWriter, r *http.Request, id int64) {
