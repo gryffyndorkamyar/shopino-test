@@ -11,6 +11,9 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+	OpenAIAPIKey  string
+	OpenAIBaseURL string
+	OpenAIModel string
 }
 
 // Load تنظیمات را از env می‌خواند
@@ -23,6 +26,9 @@ func Load() Config {
 		DBUser:     env("POSTGRES_USER", "shopino"),
 		DBPassword: env("POSTGRES_PASSWORD", "shopino123"),
 		DBName:     env("POSTGRES_DB", "shopino_db"),
+		OpenAIAPIKey: env("OPENAI_API_KEY", ""),
+		OpenAIBaseURL: env("OPENAI_BASE_URL", ""),
+		OpenAIModel: env("OPENAI_MODEL","openai/gpt-5.6-mini"),
 	}
 }
 
