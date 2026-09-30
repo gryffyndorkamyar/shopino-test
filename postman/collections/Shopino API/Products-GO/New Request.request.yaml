@@ -1,5 +1,5 @@
 $kind: http-request
 name: New Request
-url: ""
+url: http://127.0.0.1:8080/health
 method: GET
 order: 1784811674285
