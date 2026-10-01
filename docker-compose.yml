@@ -34,10 +34,28 @@ services:
     expose:
       - "8000"
 
-  golang:
+  # دو کپی از سرویس محصول برای تقسیم بار
+  golang1:
     build:
       context: ./backend/golang
-    container_name: shopino-golang
+    container_name: shopino-golang-1
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      JWT_SECRET: ${JWT_SECRET}
+      GO_PORT: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8080"
+
+  golang2:
+    build:
+      context: ./backend/golang
+    container_name: shopino-golang-2
     env_file:
       - .env
     environment:
@@ -60,7 +78,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - django
-      - golang
+      - golang1
+      - golang2
 
 volumes:
   shopino_pgdata:
