@@ -1,0 +1,163 @@
+================================================================================
+MEGA PRODUCT BACKEND — PURE ARCHITECTURE SCHEMATIC
+================================================================================
+
+[Browser / Mobile App | JWT Store]
+              |
+              |  Authorization: Bearer <JWT>
+              v
+[Global Load Balancer | Parallelism]
+              |
+              v
+[API Gateway pods: gw-1 | gw-2 | gw-3 | Concurrency]
+              |
+      +-------+--------+----------------+
+      |                |                |
+      v                v                v
+[route /auth/**] [route /products/**] [route /ai/** /chat/** /search/**]
+      |                |                |
+      v                v                v
+
++--------------------+  +--------------------+  +-------------------------+
+| AUTH SERVICE       |  | PRODUCT SERVICE    |  | AI / CHATBOT / SEARCH   |
+| LB: auth-lb        |  | LB: product-lb     |  | LB: ai-lb               |
+| pods:              |  | pods:              |  | pods:                   |
+|  Django-1          |  |  Golang-1          |  |  AI-1                   |
+|  Django-2          |  |  Golang-2          |  |  AI-2                   |
+|  Django-3          |  |  Golang-3          |  |  Chatbot-1              |
+|                    |  |  Golang-4          |  |  ES-node-1/2/3          |
+| <<Parallelism>>    |  | <<Parallelism>>    |  | <<Parallelism>>         |
+| <<Concurrency>>    |  | <<Concurrency>>    |  | <<Concurrency>>         |
+|                    |  |                    |  |                         |
+| SOLID: Identity    |  | SOLID: Commerce    |  | SOLID: Assistant        |
+|                    |  |                    |  |                         |
+| Clean Architecture |  | Clean Architecture |  | Clean Architecture      |
+|  [Handler]         |  |  [Handler]         |  |  [Handler]              |
+|     |              |  |     |              |  |     |                   |
+|     v              |  |     v              |  |     v                   |
+|  [UseCase]         |  |  [UseCase]         |  |  [UseCase]              |
+|     |              |  |     |              |  |     |                   |
+|     v              |  |     v              |  |     v                   |
+|  [Repository]      |  |  [Repository]      |  |  [Repository]           |
+|                    |  |                    |  |                         |
+| Feature pipeline:  |  | Feature pipeline:  |  | Feature pipeline:       |
+|                    |  |                    |  |                         |
+| [Register]         |  | [JWT Gate]         |  | [JWT Gate]              |
+|    |               |  |    |fail->403      |  |    |fail->403           |
+|    v               |  |    v               |  |    v                    |
+| [Validate]         |  | [Catalog Query]    |  | [Payment/Sub Gate]      |
+|    |               |  |    |               |  |    |fail->402/403       |
+|    v               |  |    v               |  |    v                    |
+| [Write User DB]    |  | [Cart R/W DB]      |  | [ES RAG Retrieve]       |
+|    |               |  |    |               |  |    |                    |
+|    +-->[Response]  |  |    v               |  |    v                    |
+|    |               |  | [Checkout]         |  | [OpenAI Generate]       |
+|    +-->[Event]     |  |    |               |  |    |                    |
+|       welcome-mail |  |    v               |  |    +-->[Stream to Client]
+|       -> Queue     |  | [Order Write DB]   |  |    |                    |
+|                    |  |    |               |  |    +-->[Usage Ledger DB]|
+| [Login]            |  |    +-->[Response]  |  |    |                    |
+|    |               |  |    |               |  |    +-->[Event] reindex  |
+|    v               |  |    +-->[Event]     |  |         -> Queue        |
+| [Query User DB]    |  |       invoice      |  |                         |
+|    |               |  |       email        |  | [Chatbot Session]       |
+|    v               |  |       fraud        |  |    |                    |
+| [Verify Password]  |  |       -> Queue     |  |    v                    |
+|    |               |  |                    |  | [Save Messages DB]      |
+|    v               |  | [Payment Status]   |  |    |                    |
+| [Issue JWT]        |  |    |               |  |    v                    |
+|  Access+Refresh    |  |    v               |  | [Reply to Client]       |
+|    |               |  | [Update DB]        |  |    |                    |
+|    v               |  |                    |  |    +-->[Event]-> Queue  |
+| [Return JWT] ----+ |  +----------+---------+  +------------+------------+
+| to Client        | |             |                         |
+|                  | |             |                         |
+| [Logout]         | |             |                         |
+| [Refresh JWT]    | |             |                         |
+| [OAuth Callback] | |             |                         |
++------------------+ |             |                         |
+                   | |             |                         |
+                   v v             v                         v
+
+        +------------------------------------------------------+
+        | CLIENT JWT HANDOFF BUS                               |
+        | Auth --JWT--> Client --JWT--> Product/AI/Chat pods   |
+        | verify: local JWKS / shared secret                   |
+        +----------------------+-------------------------------+
+                               |
+               +---------------+---------------+
+               |                               |
+               v                               v
++------------------------------+   +----------------------------------+
+| SYNC DATA PLANE              |   | EVENT-DRIVEN DATA PLANE          |
+| Service -> PostgreSQL        |   | Service -> Redis Broker          |
+|                              |   |                                  |
+| edges:                       |   | Redis:                           |
+|  Auth.Register -> users      |   |  [Queue High  P0]                |
+|  Auth.Login    -> read users |   |  [Queue Normal P1]               |
+|  Product.Cart  -> cart       |   |  [Queue Low   P2]                |
+|  Product.Order -> orders     |   |         |                        |
+|  Product.Pay   -> payments   |   |         | <<Queue>>              |
+|  AI.Usage      -> ledger     |   |         v                        |
+|  Chat.Msgs     -> chat meta  |   | [Celery Workers]                 |
+|  Sub.Check     -> subs       |   |  worker-1                        |
+|                              |   |  worker-2                        |
+| <<no Redis on this plane>>   |   |  worker-3                        |
++---------------^--------------+   |         |                        |
+                |                  |         v                        |
+                |                  | [Job Graph]                      |
+                |                  |  welcome-email                   |
+                |                  |  receipt-email                   |
+                |                  |  invoice-pdf                     |
+                |                  |  es-embedding-rebuild            |
+                |                  |  fraud-scan                      |
+                |                  |  analytics                       |
+                |                  |         |                        |
+                |                  |         v                        |
+                |                  | [Persist Critical Result]        |
+                +------------------+-----------+----------------------+
+                                               |
+                                               v
+                                +------------------------------+
+                                | PostgreSQL PRIMARY           |
+                                | Source of Truth              |
+                                |                              |
+                                | [users]                      |
+                                | [oauth_links]                |
+                                | [products]                   |
+                                | [carts]                      |
+                                | [orders]                     |
+                                | [payments]                   |
+                                | [subscriptions]              |
+                                | [chat_sessions]              |
+                                | [chat_messages]              |
+                                | [usage_ledger]               |
+                                | [worker_final_results]       |
+                                |                              |
+                                | excluded:                    |
+                                |  [client_jwt_string]         |
+                                |  [redis_queue_messages]      |
+                                |  [cache_entries]             |
+                                |  [raw_llm_token_stream]      |
+                                +------------------------------+
+
++------------------ TOPOLOGY TAGS EMBEDDED ------------------+
+| Parallelism : Django-n | Golang-n | AI-n | worker-n | gw-n |
+| Concurrency : inside each pod                              |
+| Queue       : Redis P0 -> P1 -> P2                         |
+| Event-driven: EVENT-DRIVEN DATA PLANE only                 |
+| Sync        : SYNC DATA PLANE only                         |
+| Clean Arch  : Handler -> UseCase -> Repository (per svc)   |
+| SOLID       : Auth != Product != AI != Worker              |
++------------------------------------------------------------+
+
++---------------- FEATURE OWNER MATRIX ----------------------+
+| Register/Login/Logout/Refresh/OAuth  -> AUTH SERVICE       |
+| Catalog/Cart/Order/PaymentStatus     -> PRODUCT SERVICE    |
+| Assistant/Chatbot/ES-RAG/OpenAI      -> AI/CHATBOT/SEARCH  |
+| Email/Reindex/Invoice/Analytics/Fraud-> WORKERS            |
++------------------------------------------------------------+
+
+================================================================================
+END SCHEMATIC
+================================================================================

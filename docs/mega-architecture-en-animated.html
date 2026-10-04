@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mega Product Architecture — Animated English Schematic</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --text: #e8eef4;
+      --muted: #9aa7b5;
+      --accent: #38bdf8;
+      --event: #34d399;
+      --gate: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid #2a3542;
+    }
+    h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button {
+      background: #243040;
+      color: var(--text);
+      border: 1px solid #3a4a5c;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font: inherit;
+    }
+    button:hover, button.active { border-color: var(--accent); background: #2b3d52; }
+    .hint { color: var(--muted); font-size: .82rem; }
+
+    .viewport {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      overflow: auto;
+    }
+    .frame {
+      position: relative;
+      width: min(1200px, 100%);
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #334155;
+      background: #fff;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    .frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+    }
+    svg.overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .dot {
+      filter: drop-shadow(0 0 6px currentColor);
+    }
+    .label-float {
+      position: absolute;
+      left: 50%;
+      bottom: 10px;
+      transform: translateX(-50%);
+      background: rgba(15,20,25,.82);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: .85rem;
+      border: 1px solid #334155;
+      white-space: nowrap;
+      max-width: 92%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .legend-mini {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    .legend-mini span::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+    .l-sync::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .l-event::before { background: var(--event); box-shadow: 0 0 8px var(--event); }
+    .l-gate::before { background: var(--gate); box-shadow: 0 0 8px var(--gate); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Mega Product — Animated English Architecture Image</h1>
+      <div class="legend-mini" style="margin-top:6px">
+        <span class="l-sync">Sync request</span>
+        <span class="l-event">Async / Redis-Celery</span>
+        <span class="l-gate">Gate check</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="play" class="active" type="button">Pause</button>
+      <button id="slower" type="button">Slower</button>
+      <button id="faster" type="button">Faster</button>
+      <span class="hint">Same EN schematic image + moving traffic</span>
+    </div>
+  </header>
+
+  <div class="viewport">
+    <div class="frame" id="frame">
+      <img src="mega-product-architecture-en.jpg" alt="Mega product English architecture schematic" />
+      <svg class="overlay" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <path id="pUserGw" d="M800,95 C800,130 800,150 800,175" />
+          <path id="pGwDjango" d="M760,200 C640,230 520,270 430,330" />
+          <path id="pGwGo" d="M840,200 C960,230 1080,270 1180,320" />
+          <path id="pGoPods" d="M1180,350 C1180,380 1120,400 1060,420" />
+          <path id="pGoPods2" d="M1180,350 C1180,380 1240,400 1300,420" />
+          <path id="pDjangoRedis" d="M430,480 C430,540 520,600 620,640" />
+          <path id="pGoRedis" d="M1180,520 C1100,580 900,620 760,650" />
+          <path id="pRedisCelery" d="M700,700 C780,720 860,735 940,750" />
+          <path id="pCeleryDb" d="M980,780 C1050,800 1120,820 1200,835" />
+          <path id="pServicesDb" d="M800,520 C800,620 900,760 1050,830" />
+        </defs>
+
+        <!-- soft path hints while animating -->
+        <g id="hints" opacity="0.18" stroke-width="3" fill="none" stroke-dasharray="8 10">
+          <use href="#pUserGw" stroke="#38bdf8" />
+          <use href="#pGwDjango" stroke="#38bdf8" />
+          <use href="#pGwGo" stroke="#38bdf8" />
+          <use href="#pDjangoRedis" stroke="#34d399" />
+          <use href="#pGoRedis" stroke="#34d399" />
+          <use href="#pRedisCelery" stroke="#34d399" />
+          <use href="#pCeleryDb" stroke="#34d399" />
+        </g>
+
+        <!-- moving packets -->
+        <g id="packets"></g>
+      </svg>
+      <div class="label-float" id="caption">Request leaves User App → Gateway</div>
+    </div>
+  </div>
+
+  <script>
+    const captions = [
+      "1) Client logs in → Auth service issues JWT (NOT Nginx passing Django→Go)",
+      "2) Client keeps JWT and sends it on every Product/AI request",
+      "3) Go verifies JWT locally (same key/JWKS). Gateway only routes by path",
+      "4) Gates: JWT → Payment/Subscription → then AI/Chatbot can run",
+      "5) Simple work writes DIRECTLY to Postgres (no Redis)",
+      "6) Heavy work: publish to Redis queues (High/Normal/Low)",
+      "7) Workers finish → critical results WRITE BACK to Postgres",
+      "8) Event-driven = async heavy path only. SOLID = service boundaries, not Redis itself"
+    ];
+
+    const routes = [
+      { path: "#pUserGw", color: "#38bdf8", r: 7, dur: 1.6 },
+      { path: "#pGwDjango", color: "#38bdf8", r: 7, dur: 2.0 },
+      { path: "#pGwGo", color: "#38bdf8", r: 7, dur: 2.0 },
+      { path: "#pGoPods", color: "#fb7185", r: 6, dur: 1.5 },
+      { path: "#pGoPods2", color: "#fb7185", r: 6, dur: 1.5 },
+      { path: "#pDjangoRedis", color: "#34d399", r: 7, dur: 2.2 },
+      { path: "#pGoRedis", color: "#34d399", r: 7, dur: 2.2 },
+      { path: "#pRedisCelery", color: "#34d399", r: 7, dur: 1.8 },
+      { path: "#pCeleryDb", color: "#34d399", r: 7, dur: 1.8 },
+      { path: "#pServicesDb", color: "#38bdf8", r: 5, dur: 2.4 }
+    ];
+
+    const packets = document.getElementById("packets");
+    const caption = document.getElementById("caption");
+    let speed = 1;
+    let playing = true;
+    let captionIdx = 0;
+    let captionTimer = null;
+
+    function makePacket(route, delay) {
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "dot");
+      g.style.color = route.color;
+
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("r", route.r);
+      c.setAttribute("fill", route.color);
+      c.setAttribute("opacity", "0.95");
+
+      const anim = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
+      anim.setAttribute("dur", (route.dur / speed) + "s");
+      anim.setAttribute("repeatCount", "indefinite");
+      anim.setAttribute("begin", (delay / speed) + "s");
+      const mpath = document.createElementNS("http://www.w3.org/2000/svg", "mpath");
+      mpath.setAttributeNS("http://www.w3.org/1999/xlink", "href", route.path);
+      mpath.setAttribute("href", route.path);
+      anim.appendChild(mpath);
+
+      g.appendChild(c);
+      g.appendChild(anim);
+      packets.appendChild(g);
+    }
+
+    function rebuild() {
+      packets.innerHTML = "";
+      routes.forEach((r, i) => {
+        makePacket(r, i * 0.35);
+        // second wave for denser traffic feel
+        makePacket({ ...r, r: Math.max(4, r.r - 2) }, i * 0.35 + r.dur * 0.55);
+      });
+      document.querySelectorAll("animateMotion").forEach((a) => {
+        a.setAttribute("dur", (parseFloat(a.getAttribute("dur")) || 2) + "s");
+      });
+      // recreate with current speed
+      packets.innerHTML = "";
+      routes.forEach((r, i) => {
+        makePacket(r, i * 0.35);
+        makePacket({ ...r, r: Math.max(4, r.r - 2) }, i * 0.35 + 0.9);
+      });
+      setAnimationsPlaying(playing);
+    }
+
+    function setAnimationsPlaying(on) {
+      document.querySelectorAll("animateMotion").forEach((el) => {
+        if (on) el.resume?.() || (el.style.animationPlayState = "running");
+        try {
+          if (on) el.ownerSVGElement?.unpauseAnimations?.();
+        } catch (_) {}
+      });
+      const svg = document.querySelector("svg.overlay");
+      if (!svg) return;
+      if (on) svg.unpauseAnimations();
+      else svg.pauseAnimations();
+    }
+
+    function cycleCaption() {
+      caption.textContent = captions[captionIdx % captions.length];
+      captionIdx += 1;
+    }
+
+    function startCaptions() {
+      if (captionTimer) clearInterval(captionTimer);
+      cycleCaption();
+      captionTimer = setInterval(cycleCaption, 2600 / speed);
+    }
+
+    document.getElementById("play").onclick = () => {
+      playing = !playing;
+      setAnimationsPlaying(playing);
+      document.getElementById("play").textContent = playing ? "Pause" : "Play";
+      document.getElementById("play").classList.toggle("active", playing);
+      if (playing) startCaptions();
+      else if (captionTimer) clearInterval(captionTimer);
+    };
+
+    document.getElementById("slower").onclick = () => {
+      speed = Math.max(0.5, speed - 0.25);
+      rebuild();
+      startCaptions();
+    };
+    document.getElementById("faster").onclick = () => {
+      speed = Math.min(2.5, speed + 0.25);
+      rebuild();
+      startCaptions();
+    };
+
+    rebuild();
+    startCaptions();
+  </script>
+</body>
+</html>

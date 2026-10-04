@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shopino — Full Architecture Animation</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1c2430;
+      --muted: #5b6675;
+      --line: #c9c2b4;
+      --card: #fffdf8;
+      --navy: #1f3a5f;
+      --teal: #0f766e;
+      --amber: #b45309;
+      --rose: #9f1239;
+      --ok: #166534;
+      --sync: #1d4ed8;
+      --event: #7c2d12;
+      --clean: #115e59;
+      --solid: #6b21a8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, #efe7d6 0%, transparent 40%),
+        radial-gradient(circle at 90% 0%, #dceae6 0%, transparent 35%),
+        var(--bg);
+      color: var(--ink);
+    }
+    header {
+      padding: 18px 22px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,253,248,.85);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+    h1 { margin: 0; font-size: 1.15rem; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+    }
+    button.active, button:hover { border-color: var(--navy); background: #eef3f8; }
+    .wrap { padding: 18px; max-width: 1280px; margin: 0 auto; }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .badge {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: .86rem;
+    }
+    .badge b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 6px; }
+    .b-sync { background: var(--sync); }
+    .b-event { background: var(--event); }
+    .b-clean { background: var(--clean); }
+    .b-solid { background: var(--solid); }
+    .b-db { background: var(--ok); }
+    .b-skip { background: var(--amber); }
+
+    .stage {
+      position: relative;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 16px;
+      padding: 18px;
+      overflow: hidden;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 980px) {
+      .grid { grid-template-columns: 1.1fr 1.2fr; }
+      .full { grid-column: 1 / -1; }
+    }
+    .box {
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+      position: relative;
+      transition: box-shadow .25s, transform .25s, border-color .25s;
+    }
+    .box h3 { margin: 0 0 8px; font-size: .98rem; color: var(--navy); }
+    .box p, .box li { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.55; }
+    .box ul { margin: 6px 0 0; padding-inline-start: 18px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag {
+      font-size: .72rem;
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid transparent;
+      color: #fff;
+    }
+    .t-sync { background: var(--sync); }
+    .t-event { background: var(--event); }
+    .t-clean { background: var(--clean); }
+    .t-solid { background: var(--solid); }
+    .t-db { background: var(--ok); }
+    .t-skip { background: var(--amber); }
+    .t-gate { background: var(--rose); }
+
+    .lane {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .queue {
+      display: grid;
+      gap: 6px;
+    }
+    .q {
+      border-radius: 8px;
+      padding: 8px;
+      color: #fff;
+      font-size: .8rem;
+      display: flex;
+      justify-content: space-between;
+      opacity: .55;
+    }
+    .q.hi { background: #9f1239; }
+    .q.mid { background: #b45309; }
+    .q.low { background: #334155; }
+    .q.on { opacity: 1; transform: scale(1.02); }
+
+    .flow-arrow {
+      text-align: center;
+      color: var(--navy);
+      font-weight: 700;
+      letter-spacing: .5px;
+      opacity: .35;
+      transition: opacity .2s;
+    }
+    .flow-arrow.on { opacity: 1; }
+
+    .packet {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 4px rgba(15,118,110,.18);
+      left: 8%;
+      top: 8%;
+      opacity: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .packet.show { opacity: 1; }
+
+    .active-box {
+      border-color: var(--teal) !important;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.15);
+      transform: translateY(-1px);
+    }
+    .gate-flash {
+      animation: pulse 900ms ease;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(159,18,57,0); }
+      40% { box-shadow: 0 0 0 6px rgba(159,18,57,.18); border-color: var(--rose); }
+    }
+
+    .story {
+      margin-top: 14px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fbf8f1;
+      min-height: 74px;
+      font-size: .95rem;
+      line-height: 1.7;
+    }
+    .cols-3 {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: .8rem;
+      text-align: center;
+    }
+    [dir="ltr"] .flow-arrow { transform: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">شاپینو — شماتیک کامل معماری (انیمیشن)</h1>
+    <div class="controls">
+      <button id="btnFa" class="active" type="button">فارسی</button>
+      <button id="btnEn" type="button">English</button>
+      <button id="btnPlay" type="button">▶ پخش جریان درخواست</button>
+      <button id="btnReset" type="button">بازنشانی</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="legend" id="legend"></div>
+
+    <div class="stage" id="stage">
+      <div class="packet" id="packet"></div>
+
+      <div class="grid">
+        <div class="box full" id="boxUser">
+          <h3 data-k="userTitle"></h3>
+          <p data-k="userDesc"></p>
+          <div class="tags"><span class="tag t-sync" data-k="tagSync"></span></div>
+        </div>
+
+        <div class="flow-arrow full" id="a1">↓</div>
+
+        <div class="box full" id="boxGw">
+          <h3 data-k="gwTitle"></h3>
+          <p data-k="gwDesc"></p>
+          <div class="tags">
+            <span class="tag t-sync" data-k="tagSync"></span>
+            <span class="tag t-solid" data-k="tagSolidEdge"></span>
+          </div>
+        </div>
+
+        <div class="flow-arrow full" id="a2">↓  مسیرها جدا می‌شوند</div>
+
+        <div class="box" id="boxDjango">
+          <h3 data-k="djTitle"></h3>
+          <ul>
+            <li data-k="dj1"></li>
+            <li data-k="dj2"></li>
+            <li data-k="dj3"></li>
+          </ul>
+          <div class="tags">
+            <span class="tag t-gate" data-k="tagLoginGate"></span>
+            <span class="tag t-clean" data-k="tagClean"></span>
+            <span class="tag t-solid" data-k="tagSolid"></span>
+            <span class="tag t-sync" data-k="tagSync"></span>
+            <span class="tag t-db" data-k="tagDbMust"></span>
+          </div>
+        </div>
+
+        <div class="box" id="boxGo">
+          <h3 data-k="goTitle"></h3>
+          <ul>
+            <li data-k="go1"></li>
+            <li data-k="go2"></li>
+            <li data-k="go3"></li>
+            <li data-k="go4"></li>
+          </ul>
+          <div class="tags">
+            <span class="tag t-gate" data-k="tagJwtGate"></span>
+            <span class="tag t-gate" data-k="tagPayGate"></span>
+            <span class="tag t-clean" data-k="tagClean"></span>
+            <span class="tag t-solid" data-k="tagSolid"></span>
+            <span class="tag t-sync" data-k="tagSync"></span>
+            <span class="tag t-db" data-k="tagDbMust"></span>
+          </div>
+        </div>
+
+        <div class="flow-arrow full" id="a3">↓ کار سنگین می‌رود صف (رویدادمحور)</div>
+
+        <div class="box full" id="boxRedis">
+          <h3 data-k="redisTitle"></h3>
+          <p data-k="redisDesc"></p>
+          <div class="queue" style="margin-top:10px">
+            <div class="q hi" id="qHi"><span data-k="qHi"></span><span>P0</span></div>
+            <div class="q mid" id="qMid"><span data-k="qMid"></span><span>P1</span></div>
+            <div class="q low" id="qLow"><span data-k="qLow"></span><span>P2</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag t-event" data-k="tagEvent"></span>
+            <span class="tag t-skip" data-k="tagDbSkip"></span>
+            <span class="tag t-solid" data-k="tagSolidQueue"></span>
+          </div>
+        </div>
+
+        <div class="box" id="boxCelery">
+          <h3 data-k="celTitle"></h3>
+          <ul>
+            <li data-k="cel1"></li>
+            <li data-k="cel2"></li>
+            <li data-k="cel3"></li>
+          </ul>
+          <div class="tags">
+            <span class="tag t-event" data-k="tagEvent"></span>
+            <span class="tag t-clean" data-k="tagCleanWorker"></span>
+          </div>
+        </div>
+
+        <div class="box" id="boxDb">
+          <h3 data-k="dbTitle"></h3>
+          <div class="cols-3" style="margin-top:8px">
+            <div>
+              <strong data-k="dbMustTitle"></strong>
+              <ul>
+                <li data-k="dbm1"></li>
+                <li data-k="dbm2"></li>
+                <li data-k="dbm3"></li>
+                <li data-k="dbm4"></li>
+              </ul>
+            </div>
+            <div>
+              <strong data-k="dbSkipTitle"></strong>
+              <ul>
+                <li data-k="dbs1"></li>
+                <li data-k="dbs2"></li>
+                <li data-k="dbs3"></li>
+                <li data-k="dbs4"></li>
+              </ul>
+            </div>
+          </div>
+          <div class="tags">
+            <span class="tag t-db" data-k="tagDbMust"></span>
+            <span class="tag t-skip" data-k="tagDbSkip"></span>
+            <span class="tag t-solid" data-k="tagSolidDb"></span>
+          </div>
+        </div>
+
+        <div class="box full" id="boxPatterns">
+          <h3 data-k="patTitle"></h3>
+          <div class="cols-3" style="margin-top:8px">
+            <div>
+              <strong data-k="patCleanT"></strong>
+              <p data-k="patCleanD"></p>
+            </div>
+            <div>
+              <strong data-k="patSolidT"></strong>
+              <p data-k="patSolidD"></p>
+            </div>
+            <div>
+              <strong data-k="patEventT"></strong>
+              <p data-k="patEventD"></p>
+            </div>
+            <div>
+              <strong data-k="patSyncT"></strong>
+              <p data-k="patSyncD"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="story" id="story"></div>
+    </div>
+
+    <footer id="foot"></footer>
+  </div>
+
+  <script>
+    const I18N = {
+      fa: {
+        dir: "rtl",
+        title: "شاپینو — شماتیک کامل معماری (انیمیشن)",
+        play: "▶ پخش جریان درخواست",
+        reset: "بازنشانی",
+        legend: [
+          ["b-sync", "فراخوانی همزمان (Sync Call): جواب همان لحظه لازم است"],
+          ["b-event", "رویدادمحور (Event-Driven): کار سنگین می‌رود صف"],
+          ["b-clean", "معماری تمیز: لایه‌های Handler → UseCase → Repository"],
+          ["b-solid", "اصول سالید: هر سرویس یک مسئولیت اصلی"],
+          ["b-db", "حتماً در پستگرس ذخیره شود"],
+          ["b-skip", "لازم نیست در پستگرس بماند"],
+        ],
+        userTitle: "۱) برنامه کاربر",
+        userDesc: "کاربر ورود می‌کند، محصول می‌بیند، جستجو می‌کند، از دستیار می‌پرسد. چند کاربر همزمان درخواست می‌فرستند.",
+        gwTitle: "۲) نگهبان ورودی + تقسیم فشار (Nginx)",
+        gwDesc: "مسیر را می‌خواند: /auth و /stores → جنگو | /products → دو کپی گو. این لایه منطق کسب‌وکار ندارد.",
+        djTitle: "۳الف) سرویس کاربر و فروشگاه (جنگو)",
+        dj1: "ورود: رمز را چک کن → برگه عبور بساز (دروازه هویت)",
+        dj2: "فروشگاه: اول برگه عبور، بعد خواندن/نوشتن فروشگاه",
+        dj3: "کارهای سنگین مثل ایمیل خوش‌آمدگویی → بفرست به ردیس",
+        goTitle: "۳ب) سرویس محصول (گو × ۲ کپی)",
+        go1: "لیست محصول: چک برگه عبور → بخوان از دیتابیس",
+        go2: "جستجو: چک برگه عبور → پیدا کردن داده مرتبط",
+        go3: "دستیار: ۱) چک ورود  ۲) چک پرداخت/اشتراک  ۳) اگر اوکی بود اجرا شود",
+        go4: "کار سنگین مثل بردارسازی/صورتحساب مصرف → صف ردیس",
+        redisTitle: "۴) ردیس — کارگزار صف + اولویت‌بندی",
+        redisDesc: "وقتی چند کاربر با هم هجوم می‌آورند، کارها در صف می‌نشینند. اول اولویت بالا، بعد معمولی، بعد پایین. این همان مدیریت شلوغی بدون قفل کردن پاسخ سریع API است.",
+        qHi: "اولویت بالا: پرداخت موفق، قطع اشتراک فوری، هشدار امنیتی",
+        qMid: "اولویت معمولی: ایمیل، ساخت بردار جستجو، گزارش مصرف",
+        qLow: "اولویت پایین: آمار شبانه، پاکسازی کش، کار غیرحیاتی",
+        celTitle: "۵) کارگران سلری",
+        cel1: "از صف برمی‌دارند و در پس‌زمینه اجرا می‌کنند",
+        cel2: "نتیجه مهم را در پستگرس می‌نویسند (مثل وضعیت پرداخت)",
+        cel3: "اگر شکست خورد، دوباره تلاش می‌کنند (retry)",
+        dbTitle: "۶) دیتابیس اصلی پستگرس",
+        dbMustTitle: "حتماً ذخیره شود",
+        dbm1: "کاربر، فروشگاه، محصول، سفارش",
+        dbm2: "وضعیت پرداخت / اشتراک",
+        dbm3: "دفتر مصرف دستیار (billing ledger)",
+        dbm4: "نتیجه‌ی قطعی کارهای مهم پس‌زمینه",
+        dbSkipTitle: "لازم نیست در پستگرس",
+        dbs1: "خود برگه عبور (نزد کلاینت / کوتاه‌عمر)",
+        dbs2: "پیام‌های داخل صف ردیس",
+        dbs3: "کش موقت و وضعیت موقت صف",
+        dbs4: "جریان خام توکن‌های مدل زبانی",
+        patTitle: "۷) کجا چه الگویی هست؟",
+        patCleanT: "معماری تمیز",
+        patCleanD: "داخل جنگو و گو: ورودی API جدا، منطق کسب‌وکار جدا، دسترسی دیتابیس جدا. وابستگی‌ها به سمت داخل می‌روند.",
+        patSolidT: "اصول سالید",
+        patSolidD: "سرویس کاربر ≠ سرویس محصول ≠ کارگر صف. هر کدام یک مسئولیت. دروازه‌های ورود/پرداخت جدا از ساخت جواب دستیار.",
+        patEventT: "رویدادمحور",
+        patEventD: "ایمیل، بردارسازی، صورتحساب سنگین: سرویس فقط رویداد/تسک می‌گذارد روی ردیس؛ سلری بعداً انجام می‌دهد.",
+        patSyncT: "فراخوانی همزمان",
+        patSyncD: "لاگین، چک برگه عبور، چک اشتراک قبل از دستیار، خواندن محصول: کاربر همان لحظه جواب می‌خواهد.",
+        tagSync: "فراخوانی همزمان",
+        tagEvent: "رویدادمحور",
+        tagClean: "معماری تمیز",
+        tagCleanWorker: "کارگر جدا / تمیز",
+        tagSolid: "سالید: یک مسئولیت",
+        tagSolidEdge: "سالید: مرز سرویس",
+        tagSolidQueue: "سالید: صف ≠ API",
+        tagSolidDb: "منبع حقیقت داده",
+        tagLoginGate: "دروازه ورود",
+        tagJwtGate: "دروازه برگه عبور",
+        tagPayGate: "دروازه پرداخت/اشتراک",
+        tagDbMust: "ثبت در پستگرس",
+        tagDbSkip: "بدون پستگرس",
+        foot: "این انیمیشن نسخه آموزشی معماری مصاحبه‌ای شاپینو است؛ مسیر واقعی فعلی پروژه + مسیر کامل هدف (ردیس/سلری/دستیار).",
+        steps: [
+          "چند کاربر همزمان درخواست می‌فرستند → می‌رسیم به نگهبان ورودی.",
+          "نگهبان مسیر را جدا می‌کند: ورود/فروشگاه به جنگو، محصول/دستیار به گو.",
+          "دروازه هویت: اگر لاگین نباشد، فیچر فروشگاه/محصول/دستیار اصلاً شروع نمی‌شود.",
+          "برای دستیار، دروازه دوم: پرداخت/اشتراک. اگر پول نداده، دستیار روشن نمی‌شود.",
+          "جواب سریع همان لحظه برمی‌گردد (فراخوانی همزمان).",
+          "کار سنگین می‌رود ردیس. اولویت‌بندی: اول P0، بعد P1، بعد P2.",
+          "سلری از صف برمی‌دارد. فقط نتیجه قطعی مهم را در پستگرس می‌نویسد.",
+          "تمام: هویت و پرداخت دروازه‌اند، صف شلوغی را مدیریت می‌کند، پستگرس منبع حقیقت است."
+        ]
+      },
+      en: {
+        dir: "ltr",
+        title: "Shopino — Full Architecture Schematic (Animated)",
+        play: "▶ Play request flow",
+        reset: "Reset",
+        legend: [
+          ["b-sync", "Sync Call: user needs the answer now"],
+          ["b-event", "Event-Driven: heavy work goes to a queue"],
+          ["b-clean", "Clean Architecture: Handler → UseCase → Repository"],
+          ["b-solid", "SOLID: one main responsibility per service"],
+          ["b-db", "Must persist in PostgreSQL"],
+          ["b-skip", "Does NOT need to live in PostgreSQL"],
+        ],
+        userTitle: "1) User App",
+        userDesc: "Users log in, browse products, search, ask the assistant. Many users hit the system at once.",
+        gwTitle: "2) Gateway + Load Balancing (Nginx)",
+        gwDesc: "Routes by path: /auth & /stores → Django | /products → two Go replicas. No business logic here.",
+        djTitle: "3a) User & Store Service (Django)",
+        dj1: "Login: verify password → issue JWT (identity gate)",
+        dj2: "Stores: JWT first, then read/write store data",
+        dj3: "Heavy side work (welcome email) → push to Redis",
+        goTitle: "3b) Product Service (Go × 2 replicas)",
+        go1: "Product list: JWT check → read DB",
+        go2: "Search: JWT check → retrieve relevant data",
+        go3: "Assistant: 1) login check  2) payment/subscription check  3) only then run",
+        go4: "Heavy work (embeddings / usage billing) → Redis queue",
+        redisTitle: "4) Redis — broker + priority queues",
+        redisDesc: "When many users flood in, tasks wait in queues. High first, then normal, then low. This absorbs burst traffic without blocking fast API responses.",
+        qHi: "High: successful payment, force cancel plan, security alert",
+        qMid: "Normal: email, search embedding, usage report",
+        qLow: "Low: nightly stats, cache cleanup, non-critical jobs",
+        celTitle: "5) Celery workers",
+        cel1: "Pull tasks from queues and run in background",
+        cel2: "Write important final results to Postgres (e.g. payment state)",
+        cel3: "On failure: retry",
+        dbTitle: "6) Primary database — PostgreSQL",
+        dbMustTitle: "Must persist",
+        dbm1: "Users, stores, products, orders",
+        dbm2: "Payment / subscription status",
+        dbm3: "Assistant usage ledger",
+        dbm4: "Final outcomes of critical background jobs",
+        dbSkipTitle: "No need in Postgres",
+        dbs1: "JWT itself (client / short-lived)",
+        dbs2: "In-flight Redis queue messages",
+        dbs3: "Temporary cache / queue state",
+        dbs4: "Raw LLM token stream",
+        patTitle: "7) Where each pattern lives",
+        patCleanT: "Clean Architecture",
+        patCleanD: "Inside Django & Go: API input, business use-cases, and DB access are separated. Dependencies point inward.",
+        patSolidT: "SOLID",
+        patSolidD: "User service ≠ product service ≠ queue worker. Login/payment gates are separate from answer generation.",
+        patEventT: "Event-Driven",
+        patEventD: "Email, embeddings, heavy billing: service publishes a task to Redis; Celery handles it later.",
+        patSyncT: "Sync Calls",
+        patSyncD: "Login, JWT validation, subscription check before assistant, product reads: user waits for the response now.",
+        tagSync: "Sync Call",
+        tagEvent: "Event-Driven",
+        tagClean: "Clean Architecture",
+        tagCleanWorker: "Isolated worker",
+        tagSolid: "SOLID: SRP",
+        tagSolidEdge: "SOLID: service boundary",
+        tagSolidQueue: "SOLID: queue ≠ API",
+        tagSolidDb: "Source of truth",
+        tagLoginGate: "Login gate",
+        tagJwtGate: "JWT gate",
+        tagPayGate: "Payment gate",
+        tagDbMust: "Persist in Postgres",
+        tagDbSkip: "Not in Postgres",
+        foot: "Interview-ready Shopino architecture animation: current project path + target complete path (Redis/Celery/Assistant).",
+        steps: [
+          "Many users send requests at once → hit the gateway.",
+          "Gateway splits paths: auth/stores to Django, products/assistant to Go.",
+          "Identity gate: if not logged in, store/product/assistant features never start.",
+          "Assistant has a second gate: payment/subscription. No pay → assistant stays off.",
+          "Fast response returns immediately (sync call).",
+          "Heavy work goes to Redis. Priority: P0, then P1, then P2.",
+          "Celery consumes the queue. Only critical final results are written to Postgres.",
+          "Done: gates protect features, queues absorb load, Postgres is source of truth."
+        ]
+      }
+    };
+
+    let lang = "fa";
+    let timer = null;
+
+    function applyLang() {
+      const t = I18N[lang];
+      document.documentElement.lang = lang === "fa" ? "fa" : "en";
+      document.documentElement.dir = t.dir;
+      document.getElementById("title").textContent = t.title;
+      document.getElementById("btnPlay").textContent = t.play;
+      document.getElementById("btnReset").textContent = t.reset;
+      document.getElementById("foot").textContent = t.foot;
+      document.getElementById("btnFa").classList.toggle("active", lang === "fa");
+      document.getElementById("btnEn").classList.toggle("active", lang === "en");
+
+      const legend = document.getElementById("legend");
+      legend.innerHTML = t.legend.map(([cls, text]) =>
+        `<div class="badge"><b class="${cls}"></b>${text}</div>`
+      ).join("");
+
+      document.querySelectorAll("[data-k]").forEach((el) => {
+        const key = el.getAttribute("data-k");
+        if (t[key] != null) el.textContent = t[key];
+      });
+
+      document.getElementById("a2").textContent = lang === "fa" ? "↓  مسیرها جدا می‌شوند" : "↓  paths split";
+      document.getElementById("a3").textContent = lang === "fa"
+        ? "↓ کار سنگین می‌رود صف (رویدادمحور)"
+        : "↓ heavy work → queue (event-driven)";
+
+      document.getElementById("story").textContent = t.steps[0];
+    }
+
+    function clearActive() {
+      document.querySelectorAll(".box, .flow-arrow, .q").forEach((el) => {
+        el.classList.remove("active-box", "on", "gate-flash");
+      });
+      const p = document.getElementById("packet");
+      p.classList.remove("show");
+    }
+
+    function highlight(ids, storyIdx, queues) {
+      clearActive();
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.classList.contains("flow-arrow")) el.classList.add("on");
+        else el.classList.add("active-box");
+        if (id === "boxDjango" || id === "boxGo") el.classList.add("gate-flash");
+      });
+      (queues || []).forEach((q) => document.getElementById(q)?.classList.add("on"));
+      document.getElementById("story").textContent = I18N[lang].steps[storyIdx];
+      const packet = document.getElementById("packet");
+      packet.classList.add("show");
+      const map = {
+        boxUser: ["12%", "8%"],
+        boxGw: ["45%", "18%"],
+        boxDjango: ["18%", "40%"],
+        boxGo: ["70%", "40%"],
+        boxRedis: ["40%", "62%"],
+        boxCelery: ["20%", "78%"],
+        boxDb: ["72%", "78%"],
+      };
+      const last = ids.filter((x) => map[x]).pop();
+      if (last) {
+        packet.style.left = map[last][0];
+        packet.style.top = map[last][1];
+      }
+    }
+
+    function play() {
+      if (timer) clearInterval(timer);
+      const seq = [
+        [["boxUser", "a1"], 0, []],
+        [["boxGw", "a2"], 1, []],
+        [["boxDjango"], 2, []],
+        [["boxGo"], 3, []],
+        [["boxGo", "a3"], 4, []],
+        [["boxRedis", "qHi"], 5, ["qHi"]],
+        [["boxRedis", "qMid", "boxCelery"], 5, ["qHi", "qMid"]],
+        [["boxCelery", "boxDb", "qLow"], 6, ["qHi", "qMid", "qLow"]],
+        [["boxPatterns", "boxDb"], 7, []],
+      ];
+      let i = 0;
+      highlight(...seq[0]);
+      timer = setInterval(() => {
+        i += 1;
+        if (i >= seq.length) {
+          clearInterval(timer);
+          timer = null;
+          return;
+        }
+        highlight(...seq[i]);
+      }, 2200);
+    }
+
+    document.getElementById("btnFa").onclick = () => { lang = "fa"; applyLang(); clearActive(); };
+    document.getElementById("btnEn").onclick = () => { lang = "en"; applyLang(); clearActive(); };
+    document.getElementById("btnPlay").onclick = play;
+    document.getElementById("btnReset").onclick = () => { if (timer) clearInterval(timer); clearActive(); applyLang(); };
+
+    applyLang();
+  </script>
+</body>
+</html>

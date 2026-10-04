@@ -1,0 +1,185 @@
+================================================================================
+ARCHITECTED TEXT SCHEMATIC (Bilingual FA + EN) — Notepad version
+Mega Product Backend Architecture
+================================================================================
+
+[ Users: Browser / Mobile App ]     ← برنامه کاربر
+   │
+   │  After login: JWT is stored HERE (client-side)
+   │  بعد از لاگین: برگه عبور (JWT) اینجا می‌ماند
+   │  Later requests send: Authorization: Bearer <JWT>
+   ▼
+[ Global Load Balancer ]            ← تقسیم فشار سراسری
+   │  Parallelism across LB nodes   ← موازی‌کاری بین چند گره
+   ▼
+[ API Gateway x N pods ]            ← نگهبان ورودی (Nginx/Envoy)
+   │  Path routing only
+   │  Does NOT forward Django auth result to Golang
+   │  Concurrency: many open connections
+   │
+   ├──────────────────────┬──────────────────────────┐
+   ▼                      ▼                          ▼
+
+┌────────────────────┐  ┌────────────────────┐  ┌──────────────────────────┐
+│ Auth Service       │  │ Product Service    │  │ AI / Chatbot / Search    │
+│ Django-1/2/3 pods  │  │ Golang-1/2/3/4     │  │ AI-1/2 , Chatbot-1       │
+│ SOLID: identity    │  │ SOLID: commerce    │  │ + Elasticsearch          │
+│ only               │  │ only               │  │ SOLID: assistant only    │
+│ Clean Architecture │  │ Clean Architecture │  │ Clean Architecture       │
+│ Handler→UseCase→   │  │ Handler→UseCase→   │  │ Handler→UseCase→Repo     │
+│ Repository         │  │ Repository         │  │                          │
+└─────────┬──────────┘  └─────────┬──────────┘  └────────────┬─────────────┘
+          │                       │                          │
+          ▼                       ▼                          ▼
+
+
+======================== Auth features (step-by-step) ========================
+
+Register / ثبت‌نام:
+Request → Validate → Write user to PostgreSQL → Response
+                 └─ Event-driven: welcome email → Queue (Redis)
+
+Login / لاگین:
+Request → Read user (Query) → Check password → Issue Access JWT + Refresh JWT
+       → Return JWT to Browser/App   ★ Sync
+         (Client stores JWT)
+
+Logout / خروج:
+Request → Invalidate refresh token → Response
+
+Refresh token / تازه‌سازی:
+Refresh JWT → Verify → New Access JWT → Client
+
+OAuth login (Google/Apple):
+OAuth callback → Link identity → Issue internal JWT → Client
+
+
+======================== JWT flow (critical path) ========================
+
+Auth Service ──JWT──► Browser/App
+Browser/App ──same JWT header──► Product / AI / Chatbot pods
+Each target service verifies JWT locally (shared secret / JWKS)
+
+Correct: Client carries JWT
+Wrong: Gateway copies auth from Django to Golang
+
+
+======================= Product features (step-by-step) =======================
+
+P1) JWT Gate → fail = stop
+P2) Catalog → Query DB/cache → Sync response
+P3) Cart → Direct read/write PostgreSQL
+P4) Checkout/Order → Direct write PostgreSQL ★ no Redis
+P5) Payment status → Update PostgreSQL
+
+After successful order (Event-driven):
+Invoice / receipt email / fraud check ──► Redis Queue
+
+
+============= AI + Chatbot + Search features (step-by-step) =============
+
+G1) JWT Gate → fail = stop
+G2) Payment / Subscription Gate → fail = stop
+Only then run feature:
+
+AI Assistant:
+Question → Elasticsearch RAG retrieve → OpenAI answer
+        → Persist usage ledger in PostgreSQL
+        → Heavy index rebuild ──► Queue
+
+Chatbot:
+Same gates → Session manage → Save needed messages in DB
+       → Reply → Heavy side jobs ──► Queue
+
+
+================== Event-driven layer (heavy jobs only) ==================
+
+                    ┌────────────────────────────────┐
+   publish task     │ Redis Broker                   │
+ ─────────────────► │ Queue High / Normal / Low      │
+ from services      │ Queue = waiting line           │
+                    │ صف = نوبت کارها                │
+                    └───────────────┬────────────────┘
+                                    ▼
+                    ┌────────────────────────────────┐
+                    │ Celery / Workers 1/2/3         │
+                    │ email / ES embedding / invoice │
+                    │ analytics                      │
+                    └───────────────┬────────────────┘
+                                    ▼ critical result
+                    ┌────────────────────────────────┐
+                    │ PostgreSQL = Source of Truth   │
+                    │ دیتابیس اصلی = منبع حقیقت      │
+                    └────────────────────────────────┘
+
+Event-driven = split urgent work from delayed work
+Event-driven ≠ "ignore one failed field and accept the rest"
+
+
+======================= Two data-write paths ========================
+
+Sync path (direct):
+Service ──────────────► PostgreSQL ──► fast response
+Examples: login, create order, subscription check, product list
+
+Async path (event-driven):
+Service ──► Redis Queue ──► Worker ──► write important result to PostgreSQL
+Examples: email, big reindex, heavy invoice
+
+
+======================= PostgreSQL rules ========================
+
+MUST persist / باید بماند:
+users, oauth links, products, cart/orders, payments,
+subscriptions, chat metadata, usage ledger,
+final critical worker results
+
+DO NOT persist / نباید بماند:
+JWT string on client, Redis queue messages, cache,
+raw LLM token stream
+
+
+=========== Queue vs Concurrency vs Parallelism ===========
+
+Parallelism / موازی‌کاری:
+Multiple pods at the same time
+(Django-1 & Django-2, Golang-1 & Golang-2 ...)
+
+Concurrency / همزمانی:
+One pod manages many requests in progress
+
+Queue / صف:
+Tasks wait in line (High → Normal → Low)
+
+
+=========== Clean Architecture + SOLID placement ===========
+
+Inside each service (Clean Architecture):
+[Handler/API] → [UseCase/Business] → [Repository/Data]
+
+Between services (SOLID - Single Responsibility):
+Auth ≠ Product ≠ AI ≠ Worker
+NOT a Redis-only label
+
+
+==================== Feature ownership map ====================
+
+Auth:     Register / Login / Logout / Refresh / OAuth
+Product:  Catalog / Cart / Order / Payment status
+AI:       Assistant / Chatbot / Elasticsearch RAG
+Workers:  Email / Reindex / Invoice / Analytics
+
+
+==================== 30-second interview script ====================
+
+Traffic → Load Balancer → API Gateway
+Auth pods issue JWT to client
+Client sends JWT to Product/AI
+Those services verify JWT themselves
+Urgent writes go directly to PostgreSQL
+Heavy jobs go Queue → Workers → write critical result back to DB
+Multiple pods = Parallelism | many requests in one pod = Concurrency | waiting line = Queue
+
+================================================================================
+END
+================================================================================
